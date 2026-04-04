@@ -14,11 +14,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Inicializar Supabase
+// Inicializar Supabase
 // Asegúrate de definir SUPABASE_URL y SUPABASE_ANON_KEY en tu archivo .env
 const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'placeholder_key';
 const supabase = createClient(supabaseUrl, supabaseKey);
-
 // API Routes
 
 // Obtener todos los estudiantes
@@ -72,7 +72,10 @@ app.post('/api/piars', async (req, res) => {
 });
 
 // Ruta por defecto para cualquier otra petición que no sea API
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        return next();
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
