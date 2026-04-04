@@ -1,9 +1,10 @@
 // --- ESTADO DE LA APLICACIÓN ---
-let estudiantes = JSON.parse(localStorage.getItem('piar_estudiantes')) || [];
-let piars = JSON.parse(localStorage.getItem('piar_registros')) || [];
+let estudiantes = [];
+let piars = [];
 
 // Al iniciar
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchDatos();
     updateDashStats();
     loadStudentsSelect();
     renderPIARs();
@@ -14,6 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.id = 'toast-alert';
     document.body.appendChild(toast);
 });
+
+async function fetchDatos() {
+    try {
+        const [resEstudiantes, resPiars] = await Promise.all([
+            fetch('/api/estudiantes'),
+            fetch('/api/piars')
+        ]);
+        if (resEstudiantes.ok) estudiantes = await resEstudiantes.json();
+        if (resPiars.ok) piars = await resPiars.json();
+    } catch (err) {
+        console.error("Error al obtener datos:", err);
+        showToast("Error al cargar datos del servidor.");
+    }
+}
 
 // --- NAVEGACIÓN SPA ---
 function navigate(viewId) {
@@ -58,7 +73,7 @@ function generateUUID() {
 }
 
 // --- ESTUDIANTES ---
-function saveStudent(e) {
+async function saveStudent(e) {
     e.preventDefault();
     
     const nombre = document.getElementById('std-nombre').value;
@@ -88,12 +103,27 @@ function saveStudent(e) {
         created_at: new Date().toISOString()
     };
     
-    estudiantes.push(newStudent);
-    localStorage.setItem('piar_estudiantes', JSON.stringify(estudiantes));
-    
-    showToast('✅ Estudiante agregado correctamente');
-    e.target.reset();
-    navigate('home');
+    try {
+        const res = await fetch('/api/estudiantes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newStudent)
+        });
+        
+        if (res.ok) {
+            const savedStudent = await res.json();
+            estudiantes.push(savedStudent);
+            showToast('✅ Estudiante agregado correctamente');
+            e.target.reset();
+            navigate('home');
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.error || "Ocurrió un error"));
+        }
+    } catch (err) {
+        console.error("Error al guardar estudiante:", err);
+        alert("Error de conexión con el servidor");
+    }
 }
 
 // --- FORMULARIO PIAR ---
@@ -157,7 +187,7 @@ function toggleFlex(isYes) {
     }
 }
 
-function savePIAR(e) {
+async function savePIAR(e) {
     e.preventDefault();
     
     // Obtener valores básicos
@@ -202,13 +232,28 @@ function savePIAR(e) {
         created_at: new Date().toISOString()
     };
 
-    piars.push(newPIAR);
-    localStorage.setItem('piar_registros', JSON.stringify(piars));
-    
-    showToast('✅ Formulario PIAR guardado');
-    e.target.reset();
-    document.getElementById('flex-options-container').classList.add('hidden');
-    navigate('list-piar');
+    try {
+        const res = await fetch('/api/piars', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newPIAR)
+        });
+        
+        if (res.ok) {
+            const savedPiar = await res.json();
+            piars.push(savedPiar);
+            showToast('✅ Formulario PIAR guardado');
+            e.target.reset();
+            document.getElementById('flex-options-container').classList.add('hidden');
+            navigate('list-piar');
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.error || "Ocurrió un error al guardar"));
+        }
+    } catch(err) {
+        console.error("Error al guardar PIAR:", err);
+        alert("Error de conexión con el servidor");
+    }
 }
 
 // --- VER PIARs ---
