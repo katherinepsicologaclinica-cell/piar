@@ -1,6 +1,8 @@
 // --- ESTADO DE LA APLICACIÓN ---
 let estudiantes = [];
 let piars = [];
+let currentStudentStep = 1;
+let currentPiarStep = 1;
 
 // Al iniciar
 document.addEventListener('DOMContentLoaded', async () => {
@@ -8,12 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDashStats();
     loadStudentsSelect();
     renderPIARs();
-    
-    // Crear toast notification element
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.id = 'toast-alert';
-    document.body.appendChild(toast);
 });
 
 async function fetchDatos() {
@@ -26,7 +22,7 @@ async function fetchDatos() {
         if (resPiars.ok) piars = await resPiars.json();
     } catch (err) {
         console.error("Error al obtener datos:", err);
-        showToast("Error al cargar datos del servidor.");
+        showToast("Error al conectar con el servidor.");
     }
 }
 
@@ -35,22 +31,112 @@ function navigate(viewId) {
     // Ocultar todas las vistas
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     // Mostrar la vista seleccionada
-    document.getElementById(`view-${viewId}`).classList.add('active');
+    const targetView = document.getElementById(`view-${viewId}`);
+    if (targetView) targetView.classList.add('active');
     
     // Actualizar botones de navegación
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    // Buscar el botón correspondiente (por su onclick)
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-primary', 'text-secondary', 'text-gray-900');
+        btn.classList.add('text-gray-400');
+    });
+
     const btn = document.querySelector(`.nav-btn[onclick="navigate('${viewId}')"]`);
-    if(btn) btn.classList.add('active');
+    if(btn) {
+        btn.classList.remove('text-gray-400');
+        const colorClass = (viewId === 'new-piar') ? 'text-secondary' : 'text-primary';
+        btn.classList.add(colorClass);
+    }
 
     if(viewId === 'home') updateDashStats();
-    if(viewId === 'new-piar') loadStudentsSelect();
+    if(viewId === 'new-piar') {
+        loadStudentsSelect();
+        resetFormSteps('piar');
+    }
     if(viewId === 'list-piar') renderPIARs();
+    if(viewId === 'add-student') resetFormSteps('student');
+}
+
+// --- LÓGICA DE FORMULARIOS POR PASOS ---
+function resetFormSteps(type) {
+    if (type === 'student') {
+        currentStudentStep = 1;
+        updateProgress('student');
+    } else {
+        currentPiarStep = 1;
+        updateProgress('piar');
+    }
+}
+
+function nextStep(type) {
+    if (type === 'student') {
+        if (validateStep('student', currentStudentStep)) {
+            currentStudentStep++;
+            updateProgress('student');
+        }
+    } else {
+        if (validateStep('piar', currentPiarStep)) {
+            currentPiarStep++;
+            updateProgress('piar');
+        }
+    }
+}
+
+function prevStep(type) {
+    if (type === 'student' && currentStudentStep > 1) {
+        currentStudentStep--;
+        updateProgress('student');
+    } else if (type === 'piar' && currentPiarStep > 1) {
+        currentPiarStep--;
+        updateProgress('piar');
+    }
+}
+
+function validateStep(type, step) {
+    const container = document.getElementById(`${type}-step-${step}`);
+    const requiredInputs = container.querySelectorAll('[required]');
+    let valid = true;
+    
+    requiredInputs.forEach(input => {
+        if (!input.value.trim()) {
+            input.classList.add('ring-2', 'ring-red-300');
+            valid = false;
+        } else {
+            input.classList.remove('ring-2', 'ring-red-300');
+        }
+    });
+
+    if (!valid) showToast("⚠️ Completa los campos obligatorios");
+    return valid;
+}
+
+function updateProgress(type) {
+    const total = (type === 'student') ? 2 : 5;
+    const current = (type === 'student') ? currentStudentStep : currentPiarStep;
+    const percent = (current / total) * 100;
+
+    // Actualizar barra y texto
+    document.getElementById(`${type}-progress-bar`).style.width = `${percent}%`;
+    document.getElementById(`${type}-step-indicator`).textContent = `Paso ${current} de ${total}`;
+
+    // Mostrar/ocultar pasos
+    document.querySelectorAll(`#form-${type} .form-step`).forEach((el, idx) => {
+        el.classList.toggle('active', (idx + 1) === current);
+    });
+
+    // Control de botones
+    const btnPrev = document.getElementById(`btn-${type}-prev`);
+    const btnNext = document.getElementById(`btn-${type}-next`);
+    const btnSave = document.getElementById(`btn-${type}-save`);
+
+    btnPrev.classList.toggle('hidden', current === 1);
+    btnNext.classList.toggle('hidden', current === total);
+    btnSave.classList.toggle('hidden', current !== total);
 }
 
 // --- UTILIDADES ---
 function showToast(message) {
     const toast = document.getElementById('toast-alert');
+    if (!toast) return;
     toast.textContent = message;
     toast.style.opacity = '1';
     
@@ -64,7 +150,6 @@ function updateDashStats() {
     document.getElementById('stat-piars').textContent = piars.length;
 }
 
-// Genera un UUID v4 básico
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -79,19 +164,8 @@ async function saveStudent(e) {
     const nombre = document.getElementById('std-nombre').value;
     const grado = document.getElementById('std-grado').value;
     const edad = document.getElementById('std-edad').value;
-    
-    // Recolectar checkboxes
-    const diagnosticos = [];
-    document.querySelectorAll('input[name="diagnostico"]:checked').forEach(cb => {
-        diagnosticos.push(cb.value);
-    });
-    
+    const diagnosticos = Array.from(document.querySelectorAll('input[name="diagnostico"]:checked')).map(cb => cb.value);
     const detalle = document.getElementById('std-detalle-diag').value;
-    
-    if(!nombre || !grado) {
-        alert("El nombre y el grado son obligatorios.");
-        return;
-    }
     
     const newStudent = {
         id: generateUUID(),
@@ -104,6 +178,7 @@ async function saveStudent(e) {
     };
     
     try {
+        showToast("⏳ Guardando...");
         const res = await fetch('/api/estudiantes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,14 +197,15 @@ async function saveStudent(e) {
         }
     } catch (err) {
         console.error("Error al guardar estudiante:", err);
-        alert("Error de conexión con el servidor");
+        alert("Error de conexión");
     }
 }
 
 // --- FORMULARIO PIAR ---
 function loadStudentsSelect() {
     const select = document.getElementById('piar-estudiante');
-    select.innerHTML = '<option value="">Seleccione estudiante registrado...</option>';
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccione estudiante...</option>';
     
     estudiantes.forEach(est => {
         const opt = document.createElement('option');
@@ -139,41 +215,32 @@ function loadStudentsSelect() {
     });
 }
 
-// LOGICA CLAVE: Autosugerir barreras basado en diagnóstico
 function handleStudentSelect(studentId) {
     const helper = document.getElementById('diag-helper');
     if(!studentId) {
-        helper.textContent = "Selecciona un estudiante para sugerir barreras.";
+        helper.textContent = "Selecciona para ver sugerencias";
         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
         return;
     }
     
     const student = estudiantes.find(s => s.id === studentId);
     if(student && student.diagnostico && student.diagnostico.length > 0) {
-        helper.textContent = `💡 Sugiriendo barreras basado en: ${student.diagnostico.join(', ')}`;
-        
-        // Limpiar
+        helper.textContent = `💡 Sugerencia: ${student.diagnostico.join(', ')}`;
         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
         
-        // Mapeo sugerido
         const diags = student.diagnostico;
         const barrisAutoselect = new Set();
-        
         if(diags.includes("Dificultad en lectura")) { barrisAutoselect.add("Lectura"); barrisAutoselect.add("Comprensión"); }
-        if(diags.includes("Dificultad en escritura")) { barrisAutoselect.add("Escritura"); barrisAutoselect.add("Motrices"); }
+        if(diags.includes("Dificultad en escritura")) { barrisAutoselect.add("Escritura"); }
         if(diags.includes("Dificultad cognitiva")) { barrisAutoselect.add("Comprensión"); barrisAutoselect.add("Metodológicas"); }
-        if(diags.includes("Trastorno de atención")) { barrisAutoselect.add("Atención"); barrisAutoselect.add("Del entorno"); }
-        if(diags.includes("Discapacidad auditiva")) { barrisAutoselect.add("Comunicación"); barrisAutoselect.add("Metodológicas"); }
-        if(diags.includes("Discapacidad visual")) { barrisAutoselect.add("Lectura"); barrisAutoselect.add("Entorno"); }
+        if(diags.includes("Trastorno de atención")) { barrisAutoselect.add("Atención"); }
         
-        // Check checkboxes
         barrisAutoselect.forEach(val => {
             const cb = document.querySelector(`input[name="barreras"][value="${val}"]`);
             if(cb) cb.checked = true;
         });
     } else {
-         helper.textContent = "Estudiante sin diagnóstico específico pre-marcado.";
-         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
+         helper.textContent = "Estudiante sin diagnóstico previo.";
     }
 }
 
@@ -190,49 +257,37 @@ function toggleFlex(isYes) {
 async function savePIAR(e) {
     e.preventDefault();
     
-    // Obtener valores básicos
     const docente = document.getElementById('piar-docente').value;
     const estudiante_id = document.getElementById('piar-estudiante').value;
     const asignatura = document.getElementById('piar-asignatura').value;
     const ajuste_razonable = document.getElementById('piar-ajuste').value;
     const meta = document.getElementById('piar-meta').value;
-    
-    // Radios
     const flexRadio = document.querySelector('input[name="flexibilizacion"]:checked');
     const flexibilizacion = flexRadio ? flexRadio.value === 'si' : false;
-    
     const frecRadio = document.querySelector('input[name="frecuencia"]:checked');
     const frecuencia = frecRadio ? frecRadio.value : '';
 
-    // Función helper para arrays de checkboxes
     const getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
-
-    const barreras = getCheckedValues('barreras');
-    const tipo_flex = getCheckedValues('tipo_flex');
-    const evaluacion = getCheckedValues('evaluacion');
-    const apoyo = getCheckedValues('apoyo');
-    const seguimiento = getCheckedValues('seguimiento');
-
-    if(!estudiante_id) { alert("Debe seleccionar un estudiante."); return; }
 
     const newPIAR = {
         id: generateUUID(),
         estudiante_id,
         docente,
         asignatura,
-        barreras,
+        barreras: getCheckedValues('barreras'),
         ajuste_razonable,
         flexibilizacion,
-        tipo_flexibilizacion: tipo_flex,
-        evaluacion,
-        apoyo,
+        tipo_flexibilizacion: getCheckedValues('tipo_flex'),
+        evaluacion: getCheckedValues('evaluacion'),
+        apoyo: getCheckedValues('apoyo'),
         meta,
-        seguimiento,
+        seguimiento: getCheckedValues('seguimiento'),
         frecuencia,
         created_at: new Date().toISOString()
     };
 
     try {
+        showToast("⏳ Guardando...");
         const res = await fetch('/api/piars', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -244,29 +299,27 @@ async function savePIAR(e) {
             piars.push(savedPiar);
             showToast('✅ Formulario PIAR guardado');
             e.target.reset();
-            document.getElementById('flex-options-container').classList.add('hidden');
             navigate('list-piar');
         } else {
             const errData = await res.json();
-            alert("Error: " + (errData.error || "Ocurrió un error al guardar"));
+            alert("Error: " + (errData.error || "Error al guardar"));
         }
     } catch(err) {
-        console.error("Error al guardar PIAR:", err);
-        alert("Error de conexión con el servidor");
+        console.error("Error:", err);
+        alert("Error de conexión");
     }
 }
 
-// --- VER PIARs ---
 function renderPIARs() {
     const list = document.getElementById('piar-list-container');
+    if (!list) return;
     list.innerHTML = '';
     
     if(piars.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No hay PIARs registrados aún.</p>';
+        list.innerHTML = '<div class="text-center py-10 text-gray-400 font-medium">No hay registros aún.</div>';
         return;
     }
     
-    // Ordenar de más reciente a más antiguo
     const sortedPiars = [...piars].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
     
     sortedPiars.forEach(p => {
@@ -274,82 +327,50 @@ function renderPIARs() {
         const stdName = std ? std.nombre : 'Estudiante eliminado';
         
         const card = document.createElement('div');
-        card.className = 'piar-detail-card';
+        card.className = 'bg-white p-5 rounded-2xl shadow-sm border-l-4 border-primary';
         card.innerHTML = `
-            <h3>${stdName}</h3>
-            <p><strong>Asignatura:</strong> ${p.asignatura}</p>
-            <p><strong>Docente:</strong> ${p.docente}</p>
-            <p><strong>Meta:</strong> ${p.meta}</p>
-            <span class="badge">Registrado: ${new Date(p.created_at).toLocaleDateString()}</span>
+            <h3 class="font-bold text-gray-800 text-lg">${stdName}</h3>
+            <div class="mt-2 space-y-1">
+                <p class="text-xs text-gray-500 font-medium"><span class="text-gray-400">Asignatura:</span> ${p.asignatura}</p>
+                <p class="text-xs text-gray-500 font-medium"><span class="text-gray-400">Docente:</span> ${p.docente}</p>
+                <p class="text-[0.65rem] text-primary font-bold mt-2 opacity-70">${new Date(p.created_at).toLocaleDateString()}</p>
+            </div>
         `;
         list.appendChild(card);
     });
 }
 
-// --- EXPORTAR EXCEL ---
 function exportExcel() {
     if(piars.length === 0) {
-        alert("No hay datos para exportar.");
+        showToast("❌ No hay datos para exportar.");
         return;
     }
 
-    // Encabezados requeridos EXACTAMENTE como pidió el usuario:
-    // Nombre del docente, Asignatura, Barreras identificadas, Estrategia metodológica, 
-    // Flexibilización de tiempo, Tipo de flexibilización, Tipo de evaluación, 
-    // Apoyo requerido, Meta de aprendizaje, Tipo de seguimiento, Frecuencia de seguimiento
-    
     const headers = [
-        "Estudiante",
-        "Grado",
-        "Diagnóstico",
-        "Nombre del docente",
-        "Asignatura",
-        "Barreras identificadas",
-        "Estrategia metodológica", // (Ajuste razonable)
-        "Flexibilización de tiempo",
-        "Tipo de flexibilización",
-        "Tipo de evaluación",
-        "Apoyo requerido",
-        "Meta de aprendizaje",
-        "Tipo de seguimiento",
-        "Frecuencia de seguimiento",
-        "Fecha"
+        "Estudiante", "Grado", "Diagnóstico", "Docente", "Asignatura", 
+        "Barreras", "Ajuste Metodológico", "Flex. Tiempo", "Tipo Flex", 
+        "Evaluación", "Apoyo", "Meta", "Seguimiento", "Frecuencia", "Fecha"
     ];
 
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM para acentos en Excel
-    csvContent += headers.join(";") + "\r\n";
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(";") + "\r\n";
 
     piars.forEach(p => {
         const std = estudiantes.find(s => s.id === p.estudiante_id) || {};
-        
         const row = [
-            `"${std.nombre || ''}"`,
-            `"${std.grado || ''}"`,
-            `"${(std.diagnostico || []).join(', ')}"`,
-            `"${p.docente || ''}"`,
-            `"${p.asignatura || ''}"`,
-            `"${(p.barreras || []).join(', ')}"`,
-            `"${(p.ajuste_razonable || '').replace(/"/g, '""')}"`,
-            `"${p.flexibilizacion ? 'Sí' : 'No'}"`,
-            `"${(p.tipo_flexibilizacion || []).join(', ')}"`,
-            `"${(p.evaluacion || []).join(', ')}"`,
-            `"${(p.apoyo || []).join(', ')}"`,
-            `"${(p.meta || '').replace(/"/g, '""')}"`,
-            `"${(p.seguimiento || []).join(', ')}"`,
-            `"${p.frecuencia || ''}"`,
+            `"${std.nombre || ''}"`, `"${std.grado || ''}"`, `"${(std.diagnostico || []).join(', ')}"`,
+            `"${p.docente || ''}"`, `"${p.asignatura || ''}"`, `"${(p.barreras || []).join(', ')}"`,
+            `"${(p.ajuste_razonable || '').replace(/"/g, '""')}"`, `"${p.flexibilizacion ? 'Sí' : 'No'}"`,
+            `"${(p.tipo_flexibilizacion || []).join(', ')}"`, `"${(p.evaluacion || []).join(', ')}"`,
+            `"${(p.apoyo || []).join(', ')}"`, `"${(p.meta || '').replace(/"/g, '""')}"`,
+            `"${(p.seguimiento || []).join(', ')}"`, `"${p.frecuencia || ''}"`,
             `"${new Date(p.created_at).toLocaleDateString()}"`
         ];
-        
         csvContent += row.join(";") + "\r\n";
     });
 
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Exportacion_PIAR_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
+    link.href = encodeURI(csvContent);
+    link.download = `PIAR_Export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    document.body.removeChild(link);
-    
     showToast("💾 Exportando Excel...");
 }
