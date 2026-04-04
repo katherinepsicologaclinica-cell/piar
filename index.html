@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PIAR App</title>
+    <meta name="description" content="Aplicación web para gestión de Plan Individual de Ajustes Razonables (PIAR).">
+    
+    <!-- Fuentes Modernas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Íconos (Phosphor o Feather via SVG inline) usaremos emojis y caracteres simples para mejor agilidad -->
+</head>
+<body>
+    
+    <div id="app-container">
+        
+        <header id="top-bar">
+            <h1>Gestión PIAR</h1>
+            <p id="system-status">Modo Local</p>
+        </header>
+
+        <main id="main-content">
+            <!-- VISTA INICIO -->
+            <section id="view-home" class="view active">
+                <div class="welcome-card">
+                    <h2>Bienvenido, Docente</h2>
+                    <p>Agiliza la creación y gestión de tus PIAR según el decreto 1421 de manera intuitiva y rápida.</p>
+                </div>
+                
+                <div class="home-actions">
+                    <button class="btn btn-primary btn-large block" onclick="navigate('add-student')">
+                        <span class="emoji">👨🏽‍🎓</span> Agregar Estudiante
+                    </button>
+                    <button class="btn btn-secondary btn-large block" onclick="navigate('new-piar')">
+                        <span class="emoji">📝</span> Nuevo Formulario PIAR
+                    </button>
+                </div>
+                
+                <div class="stats-card">
+                    <h3>Resumen</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <h4 id="stat-students">0</h4>
+                            <span>Estudiantes</span>
+                        </div>
+                        <div class="stat-item">
+                            <h4 id="stat-piars">0</h4>
+                            <span>PIARs Registrados</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA AGREGAR ESTUDIANTE -->
+            <section id="view-add-student" class="view">
+                <h2>➕ Agregar Estudiante</h2>
+                <form id="form-student" onsubmit="saveStudent(event)">
+                    
+                    <div class="form-group">
+                        <label for="std-nombre">Nombre del estudiante *</label>
+                        <input type="text" id="std-nombre" required placeholder="Ej: Juan Pérez">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="std-grado">Grado *</label>
+                        <select id="std-grado" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Preescolar">Preescolar</option>
+                            <option value="1º">1º Primero</option>
+                            <option value="2º">2º Segundo</option>
+                            <option value="3º">3º Tercero</option>
+                            <option value="4º">4º Cuarto</option>
+                            <option value="5º">5º Quinto</option>
+                            <option value="6º">6º Sexto</option>
+                            <option value="7º">7º Séptimo</option>
+                            <option value="8º">8º Octavo</option>
+                            <option value="9º">9º Noveno</option>
+                            <option value="10º">10º Décimo</option>
+                            <option value="11º">11º Once</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="std-edad">Edad (opcional)</label>
+                        <input type="number" id="std-edad" min="3" max="25" placeholder="Ej: 8">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Diagnóstico (selección múltiple)</label>
+                        <div class="checkbox-group" id="std-diagnosticos">
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Dificultad en lectura"> 
+                                <span class="checkmark"></span>Dificultad en lectura
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Dificultad en escritura"> 
+                                <span class="checkmark"></span>Dificultad en escritura
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Dificultad cognitiva"> 
+                                <span class="checkmark"></span>Dificultad cognitiva
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Trastorno de atención"> 
+                                <span class="checkmark"></span>Trastorno de atención
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Discapacidad auditiva"> 
+                                <span class="checkmark"></span>Discapacidad auditiva
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" value="Discapacidad visual"> 
+                                <span class="checkmark"></span>Discapacidad visual
+                            </label>
+                            <label class="check-container">
+                                <input type="checkbox" name="diagnostico" id="diag-otro"> 
+                                <span class="checkmark"></span>Otro
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="std-detalle-diag">Detalle del diagnóstico (opcional)</label>
+                        <textarea id="std-detalle-diag" rows="3" placeholder="Ejemplo: Dificultades en lectura y escritura, requiere apoyo visual y acompañamiento constante."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary block mt-4">Guardar Estudiante</button>
+                </form>
+            </section>
+
+            <!-- VISTA NUEVO PIAR -->
+            <section id="view-new-piar" class="view">
+                <h2>📝 Formulario PIAR</h2>
+                <form id="form-piar" onsubmit="savePIAR(event)">
+                    
+                    <div class="form-group">
+                        <label for="piar-docente">Nombre del docente *</label>
+                        <input type="text" id="piar-docente" required placeholder="Ej: María Rodríguez">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="piar-estudiante">Estudiante *</label>
+                        <select id="piar-estudiante" required onchange="handleStudentSelect(this.value)">
+                            <option value="">Seleccione estudiante registrado...</option>
+                        </select>
+                        <small class="helper-text" id="diag-helper">Selecciona un estudiante para sugerir barreras.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="piar-asignatura">Asignatura *</label>
+                        <select id="piar-asignatura" required>
+                            <option value="">Seleccione...</option>
+                            <option value="Lengua Castellana">Lengua Castellana</option>
+                            <option value="Matemáticas">Matemáticas</option>
+                            <option value="Ciencias Naturales">Ciencias Naturales</option>
+                            <option value="Ciencias Sociales">Ciencias Sociales</option>
+                            <option value="Inglés">Inglés</option>
+                            <option value="Educación Física">Educación Física</option>
+                            <option value="Otra">Otra</option>
+                        </select>
+                    </div>
+
+                    <!-- BARRERAS (Auto Sugeridas) -->
+                    <div class="form-group">
+                        <label>Barreras Identificadas</label>
+                        <div class="checkbox-group grid-2" id="piar-barreras">
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Lectura"> <span class="checkmark"></span>Lectura</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Escritura"> <span class="checkmark"></span>Escritura</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Comprensión"> <span class="checkmark"></span>Comprensión</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Atención"> <span class="checkmark"></span>Atención</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Comunicación"> <span class="checkmark"></span>Comunicación</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Tecnológicas"> <span class="checkmark"></span>Tecnológicas</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Del entorno"> <span class="checkmark"></span>Del entorno</label>
+                            <label class="check-container"><input type="checkbox" name="barreras" value="Metodológicas"> <span class="checkmark"></span>Metodológicas</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="piar-ajuste">Ajuste razonable facilitador *</label>
+                        <p class="small-label">Explique paso a paso cómo va a lograr la meta del estudiante (metodología y estrategias).</p>
+                        <textarea id="piar-ajuste" required rows="4" placeholder="Ejemplo: Para lograr la lectura, trabajaré el reconocimiento de vocales y letras del alfabeto usando material visual, repetición guiada y lectura de palabras cortas con imágenes."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>¿Requiere flexibilización de tiempo? *</label>
+                        <div class="radio-group">
+                            <label class="radio-container">
+                                <input type="radio" name="flexibilizacion" value="si" required onchange="toggleFlex(true)">
+                                <span class="radiomark"></span> Sí
+                            </label>
+                            <label class="radio-container">
+                                <input type="radio" name="flexibilizacion" value="no" required onchange="toggleFlex(false)">
+                                <span class="radiomark"></span> No
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="flex-options-container">
+                        <label>¿Cómo aplicará la flexibilización?</label>
+                        <div class="checkbox-group">
+                            <label class="check-container"><input type="checkbox" name="tipo_flex" value="Más tiempo en evaluaciones"> <span class="checkmark"></span>Más tiempo en evaluaciones</label>
+                            <label class="check-container"><input type="checkbox" name="tipo_flex" value="Entregas extendidas"> <span class="checkmark"></span>Entregas extendidas</label>
+                            <label class="check-container"><input type="checkbox" name="tipo_flex" value="Trabajo por etapas"> <span class="checkmark"></span>Trabajo por etapas</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Evaluación</label>
+                        <div class="checkbox-group grid-2">
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Oral"> <span class="checkmark"></span>Oral</label>
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Escrita"> <span class="checkmark"></span>Escrita</label>
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Práctica"> <span class="checkmark"></span>Práctica</label>
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Observación"> <span class="checkmark"></span>Observación</label>
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Rúbrica adaptada"> <span class="checkmark"></span>Rúbrica adaptada</label>
+                            <label class="check-container"><input type="checkbox" name="evaluacion" value="Otra"> <span class="checkmark"></span>Otra</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Apoyo requerido</label>
+                        <div class="checkbox-group grid-2">
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Tecnológico"> <span class="checkmark"></span>Tecnológico</label>
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Didáctico"> <span class="checkmark"></span>Didáctico</label>
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Docente de apoyo"> <span class="checkmark"></span>Docente de apoyo</label>
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Familiar"> <span class="checkmark"></span>Familiar</label>
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Institucional"> <span class="checkmark"></span>Institucional</label>
+                            <label class="check-container"><input type="checkbox" name="apoyo" value="Ninguno"> <span class="checkmark"></span>Ninguno</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="piar-meta">Meta de aprendizaje *</label>
+                        <input type="text" id="piar-meta" required placeholder="Ej: El estudiante leerá textos cortos con mayor fluidez.">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Seguimiento</label>
+                        <div class="checkbox-group grid-2">
+                            <label class="check-container"><input type="checkbox" name="seguimiento" value="Observación en clase"> <span class="checkmark"></span>Observación en clase</label>
+                            <label class="check-container"><input type="checkbox" name="seguimiento" value="Registro semanal"> <span class="checkmark"></span>Registro semanal</label>
+                            <label class="check-container"><input type="checkbox" name="seguimiento" value="Evaluaciones periódicas"> <span class="checkmark"></span>Evaluaciones periódicas</label>
+                            <label class="check-container"><input type="checkbox" name="seguimiento" value="Lista de chequeo"> <span class="checkmark"></span>Lista de chequeo</label>
+                            <label class="check-container"><input type="checkbox" name="seguimiento" value="Retro familiar"> <span class="checkmark"></span>Retro familiar</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Frecuencia</label>
+                        <div class="radio-group row-group">
+                            <label class="radio-container"><input type="radio" name="frecuencia" value="Diario"> <span class="radiomark"></span> Diario</label>
+                            <label class="radio-container"><input type="radio" name="frecuencia" value="Semanal"> <span class="radiomark"></span> Semanal</label>
+                            <label class="radio-container"><input type="radio" name="frecuencia" value="Quincenal"> <span class="radiomark"></span> Quincenal</label>
+                            <label class="radio-container"><input type="radio" name="frecuencia" value="Mensual"> <span class="radiomark"></span> Mensual</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary block mt-4">Guardar PIAR</button>
+                </form>
+            </section>
+
+            <!-- VISTA LISTADO PIAR -->
+            <section id="view-list-piar" class="view">
+                <h2>📑 PIAR Registrados</h2>
+                <div id="piar-list-container">
+                    <!-- Los PIAR se inyectan acá -->
+                </div>
+            </section>
+
+        </main>
+        
+        <!-- TOOLBAR INFERIOR -->
+        <nav id="bottom-bar">
+            <button class="nav-btn active" onclick="navigate('home')">
+                <span class="icon">🏠</span>
+                <span>Inicio</span>
+            </button>
+            <button class="nav-btn" onclick="navigate('new-piar')">
+                <span class="icon">✨</span>
+                <span>PIAR</span>
+            </button>
+            <button class="nav-btn" onclick="navigate('list-piar')">
+                <span class="icon">📄</span>
+                <span>Ver</span>
+            </button>
+            <button class="nav-btn" onclick="exportExcel()">
+                <span class="icon">⬇️</span>
+                <span>Exportar</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
