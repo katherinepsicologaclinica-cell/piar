@@ -23,32 +23,52 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Obtener todos los estudiantes
 app.get('/api/estudiantes', async (req, res) => {
-    const { data, error } = await supabase.from('estudiantes').select('*').order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    try {
+        const { data, error } = await supabase.from('estudiantes').select('*').order('created_at', { ascending: false });
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        console.error("GET estudiantes error:", err);
+        res.status(500).json({ error: err.message || "Error interno del servidor" });
+    }
 });
 
 // Crear estudiante
 app.post('/api/estudiantes', async (req, res) => {
-    const newStudent = req.body;
-    const { data, error } = await supabase.from('estudiantes').insert([newStudent]).select();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data[0]);
+    try {
+        const newStudent = req.body;
+        const { data, error } = await supabase.from('estudiantes').insert([newStudent]).select();
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data[0]);
+    } catch (err) {
+        console.error("POST estudiantes error:", err);
+        res.status(500).json({ error: err.message || "Error interno del servidor" });
+    }
 });
 
 // Obtener todos los piars
 app.get('/api/piars', async (req, res) => {
-    const { data, error } = await supabase.from('piars').select('*').order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    try {
+        const { data, error } = await supabase.from('piars').select('*').order('created_at', { ascending: false });
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data);
+    } catch (err) {
+        console.error("GET piars error:", err);
+        res.status(500).json({ error: err.message || "Error interno del servidor" });
+    }
 });
 
 // Crear un piar
 app.post('/api/piars', async (req, res) => {
-    const newPiar = req.body;
-    const { data, error } = await supabase.from('piars').insert([newPiar]).select();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data[0]);
+    try {
+        const newPiar = req.body;
+        const { data, error } = await supabase.from('piars').insert([newPiar]).select();
+        if (error) return res.status(400).json({ error: error.message });
+        res.json(data[0]);
+    } catch (err) {
+        console.error("POST piars error:", err);
+        res.status(500).json({ error: err.message || "Error interno del servidor" });
+    }
 });
 
 // Ruta por defecto para cualquier otra petición que no sea API
@@ -56,8 +76,10 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`Server listening at http://localhost:${port}`);
+    });
+}
 
 module.exports = app;
