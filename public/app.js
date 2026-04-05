@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDashStats();
     loadStudentsSelect();
     renderPIARs();
+    renderBarriers(); // Nueva función
 });
 
 async function fetchDatos() {
@@ -278,27 +279,88 @@ function handleStudentSelect(studentId) {
     if(!studentId) {
         if (helper) helper.textContent = "Selecciona para ver sugerencias";
         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
+        updateBarriersCounter();
         return;
     }
     
     const student = estudiantes.find(s => s.id === studentId);
     if(student && student.diagnostico && student.diagnostico.length > 0) {
-        if (helper) helper.textContent = `💡 Sugerencia: ${student.diagnostico.join(', ')}`;
-        document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
+        const diagStr = student.diagnostico.join(', ');
+        if (helper) helper.textContent = `💡 Sugerencia: ${diagStr}`;
         
-        const diags = student.diagnostico;
-        const barrisAutoselect = new Set();
-        if(diags.includes("Dificultad en lectura")) { barrisAutoselect.add("Lectura"); barrisAutoselect.add("Comprensión"); }
-        if(diags.includes("Dificultad en escritura")) { barrisAutoselect.add("Escritura"); }
-        if(diags.includes("Dificultad cognitiva")) { barrisAutoselect.add("Comprensión"); barrisAutoselect.add("Metodológicas"); }
-        if(diags.includes("Trastorno de atención")) { barrisAutoselect.add("Atención"); }
-        
-        barrisAutoselect.forEach(val => {
-            const cb = document.querySelector(`input[name="barreras"][value="${val}"]`);
-            if(cb) cb.checked = true;
+        // Auto-expandir acordeones relacionados
+        document.querySelectorAll('.accordion-item').forEach(item => {
+            const title = item.querySelector('.disability-title').textContent;
+            let shouldExpand = false;
+            if(diagStr.includes("cognitiva") && title.includes("Cognitiva")) shouldExpand = true;
+            if(diagStr.includes("auditiva") && title.includes("Auditiva")) shouldExpand = true;
+            if(diagStr.includes("visual") && title.includes("Visual")) shouldExpand = true;
+            if(diagStr.includes("atención") && title.includes("Aprendizaje")) shouldExpand = true;
+            
+            if(shouldExpand) item.classList.add('active');
         });
     } else {
          if (helper) helper.textContent = "Estudiante sin diagnóstico previo.";
+    }
+}
+
+// --- NUEVAS FUNCIONES PARA BARRERAS DINÁMICAS ---
+function renderBarriers() {
+    const container = document.getElementById('barreras-container');
+    if (!container || !window.BARRERAS_DATA) return;
+    container.innerHTML = '';
+
+    Object.entries(window.BARRERAS_DATA).forEach(([disability, categories]) => {
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'accordion-item bg-gray-50 rounded-xl border border-gray-200 overflow-hidden';
+        
+        const header = document.createElement('div');
+        header.className = 'accordion-header p-4 flex items-center justify-between bg-white hover:bg-gray-50';
+        header.onclick = () => accordionItem.classList.toggle('active');
+        header.innerHTML = `
+            <span class="text-xs font-bold text-gray-700 disability-title">${disability}</span>
+            <span class="chevron transition-transform duration-300 text-gray-400">▼</span>
+        `;
+        
+        const content = document.createElement('div');
+        content.className = 'accordion-content p-4 space-y-4';
+        
+        Object.entries(categories).forEach(([catName, items]) => {
+            const catHeader = document.createElement('h4');
+            catHeader.className = 'text-[0.65rem] font-black text-primary uppercase tracking-widest mb-2 border-b border-indigo-100 pb-1';
+            catHeader.textContent = catName;
+            content.appendChild(catHeader);
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 gap-2';
+            
+            items.forEach(itemText => {
+                const label = document.createElement('label');
+                label.className = 'flex items-start gap-3 p-3 bg-white border border-gray-100 rounded-xl cursor-pointer hover:border-primary transition-all';
+                label.innerHTML = `
+                    <input type="checkbox" name="barreras" value="${itemText}" onchange="updateBarriersCounter()" class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                    <span class="text-xs text-gray-600 leading-tight">${itemText}</span>
+                `;
+                grid.appendChild(label);
+            });
+            content.appendChild(grid);
+        });
+
+        accordionItem.appendChild(header);
+        accordionItem.appendChild(content);
+        container.appendChild(accordionItem);
+    });
+}
+
+function updateBarriersCounter() {
+    const count = document.querySelectorAll('input[name="barreras"]:checked').length;
+    const counter = document.getElementById('barreras-counter');
+    if (counter) {
+        counter.textContent = `${count} seleccionadas`;
+        counter.classList.toggle('bg-pink-500', count > 0);
+        counter.classList.toggle('text-white', count > 0);
+        counter.classList.toggle('bg-pink-100', count === 0);
+        counter.classList.toggle('text-pink-600', count === 0);
     }
 }
 
@@ -359,6 +421,7 @@ async function savePIAR(e) {
             piars.push(savedPiar);
             showToast('✅ Formulario PIAR guardado');
             e.target.reset();
+            updateBarriersCounter(); // Resetear contador
             handleAuthNavigation('list-piar');
         } else {
             const errData = await res.json();
@@ -416,14 +479,17 @@ function exportExcel() {
 
     piars.forEach(p => {
         const std = estudiantes.find(s => s.id === p.estudiante_id) || {};
+        const escapeCsv = (str) => `"${(str || '').toString().replace(/"/g, '""')}"`;
+        const joinAndEscape = (arr) => escapeCsv((arr || []).join(', '));
+
         const row = [
-            `"${std.nombre || ''}"`, `"${std.grado || ''}"`, `"${(std.diagnostico || []).join(', ')}"`,
-            `"${p.docente || ''}"`, `"${p.asignatura || ''}"`, `"${(p.barreras || []).join(', ')}"`,
-            `"${(p.ajuste_razonable || '').replace(/"/g, '""')}"`, `"${p.flexibilizacion ? 'Sí' : 'No'}"`,
-            `"${(p.tipo_flexibilizacion || []).join(', ')}"`, `"${(p.evaluacion || []).join(', ')}"`,
-            `"${(p.apoyo || []).join(', ')}"`, `"${(p.meta || '').replace(/"/g, '""')}"`,
-            `"${(p.seguimiento || []).join(', ')}"`, `"${p.frecuencia || ''}"`,
-            `"${new Date(p.created_at).toLocaleDateString()}"`
+            escapeCsv(std.nombre), escapeCsv(std.grado), joinAndEscape(std.diagnostico),
+            escapeCsv(p.docente), escapeCsv(p.asignatura), joinAndEscape(p.barreras),
+            escapeCsv(p.ajuste_razonable), escapeCsv(p.flexibilizacion ? 'Sí' : 'No'),
+            joinAndEscape(p.tipo_flexibilizacion), joinAndEscape(p.evaluacion),
+            joinAndEscape(p.apoyo), escapeCsv(p.meta),
+            joinAndEscape(p.seguimiento), escapeCsv(p.frecuencia),
+            escapeCsv(new Date(p.created_at).toLocaleDateString())
         ];
         csvContent += row.join(";") + "\r\n";
     });

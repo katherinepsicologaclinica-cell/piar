@@ -46,6 +46,12 @@
         .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         input[type="checkbox"]:checked + div, input[type="radio"]:checked + div { border-color: #6366f1; background-color: #eef2ff; }
         input[type="checkbox"]:checked + div span, input[type="radio"]:checked + div span { color: #4f46e5; font-weight: 600; }
+        
+        /* Accordion Styles */
+        .accordion-header { cursor: pointer; transition: all 0.3s; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .accordion-item.active .accordion-content { max-height: 2000px; transition: max-height 0.5s ease-in; }
+        .accordion-item.active .chevron { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-gray-100 flex justify-center min-h-screen">
@@ -280,32 +286,14 @@
                     <!-- PASO 2: Barreras y Ajustes -->
                     <div id="piar-step-2" class="form-step space-y-4">
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                            <label class="block text-sm font-bold text-gray-700 mb-4">Barreras Identificadas</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Lectura" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Lectura</div>
-                                </label>
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Escritura" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Escritura</div>
-                                </label>
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Comprensión" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Comprensión</div>
-                                </label>
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Atención" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Atención</div>
-                                </label>
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Metodológicas" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Metodológicas</div>
-                                </label>
-                                <label class="cursor-pointer relative">
-                                    <input type="checkbox" name="barreras" value="Entorno" class="peer absolute opacity-0">
-                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 peer-checked:border-pink-300 transition-all text-xs text-center font-medium">Entorno</div>
-                                </label>
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="block text-sm font-bold text-gray-700">Barreras Identificadas</label>
+                                <span id="barreras-counter" class="text-[0.6rem] bg-pink-100 text-pink-600 px-2 py-1 rounded-full font-bold">0 seleccionadas</span>
+                            </div>
+                            
+                            <!-- Contenedor dinámico de barreras -->
+                            <div id="barreras-container" class="space-y-3">
+                                <!-- Se inyecta desde app.js -->
                             </div>
                         </div>
 
@@ -466,6 +454,7 @@
         <div id="toast-alert" class="fixed top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none z-[100]"></div>
     </div>
 
+    <script src="barriers_data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
