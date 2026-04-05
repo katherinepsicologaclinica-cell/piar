@@ -3,6 +3,8 @@ let estudiantes = [];
 let piars = [];
 let currentStudentStep = 1;
 let currentPiarStep = 1;
+let isAuthorized = sessionStorage.getItem('piar_auth') === 'true';
+let pendingAction = null; // Para ejecutar una acción (como exportar) después de loguearse
 
 // Al iniciar
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,7 +28,53 @@ async function fetchDatos() {
     }
 }
 
-// --- NAVEGACIÓN SPA ---
+// --- NAVEGACIÓN Y AUTENTICACIÓN ---
+function handleAuthNavigation(action) {
+    if (isAuthorized) {
+        if (action === 'list-piar') navigate('list-piar');
+        if (action === 'export') exportExcel();
+    } else {
+        pendingAction = action;
+        navigate('login');
+    }
+}
+
+async function verifyLogin() {
+    const password = document.getElementById('login-password').value;
+    if (!password) {
+        showToast("Por favor ingresa la contraseña");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+
+        if (res.ok) {
+            isAuthorized = true;
+            sessionStorage.setItem('piar_auth', 'true');
+            showToast("🔓 Acceso concedido");
+            
+            // Ejecutar acción pendiente o ir a listado
+            if (pendingAction === 'export') {
+                exportExcel();
+                navigate('home');
+            } else {
+                navigate('list-piar');
+            }
+            pendingAction = null;
+            document.getElementById('login-password').value = '';
+        } else {
+            showToast("❌ Contraseña incorrecta");
+        }
+    } catch (err) {
+        showToast("Error de conexión");
+    }
+}
+
 function navigate(viewId) {
     // Ocultar todas las vistas
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -34,17 +82,18 @@ function navigate(viewId) {
     const targetView = document.getElementById(`view-${viewId}`);
     if (targetView) targetView.classList.add('active');
     
-    // Actualizar botones de navegación
+    // Actualizar botones de navegación en el top-bar
     document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-primary', 'text-secondary', 'text-gray-900');
+        btn.classList.remove('text-primary', 'text-secondary', 'text-gray-900', 'bg-gray-50');
         btn.classList.add('text-gray-400');
     });
 
-    const btn = document.querySelector(`.nav-btn[onclick="navigate('${viewId}')"]`);
+    // Encontrar el botón (considerando handleAuthNavigation o navigate)
+    const btn = document.querySelector(`.nav-btn[onclick*="'${viewId}'"]`);
     if(btn) {
         btn.classList.remove('text-gray-400');
-        const colorClass = (viewId === 'new-piar') ? 'text-secondary' : 'text-primary';
-        btn.classList.add(colorClass);
+        const colorClass = (viewId === 'new-piar' || viewId === 'login') ? 'text-secondary' : 'text-primary';
+        btn.classList.add(colorClass, 'bg-gray-50');
     }
 
     if(viewId === 'home') updateDashStats();
@@ -54,6 +103,11 @@ function navigate(viewId) {
     }
     if(viewId === 'list-piar') renderPIARs();
     if(viewId === 'add-student') resetFormSteps('student');
+    
+    // Enfocar password si es login
+    if(viewId === 'login') {
+        setTimeout(() => document.getElementById('login-password').focus(), 100);
+    }
 }
 
 // --- LÓGICA DE FORMULARIOS POR PASOS ---
@@ -115,8 +169,10 @@ function updateProgress(type) {
     const percent = (current / total) * 100;
 
     // Actualizar barra y texto
-    document.getElementById(`${type}-progress-bar`).style.width = `${percent}%`;
-    document.getElementById(`${type}-step-indicator`).textContent = `Paso ${current} de ${total}`;
+    const progressBar = document.getElementById(`${type}-progress-bar`);
+    const stepIndicator = document.getElementById(`${type}-step-indicator`);
+    if (progressBar) progressBar.style.width = `${percent}%`;
+    if (stepIndicator) stepIndicator.textContent = `Paso ${current} de ${total}`;
 
     // Mostrar/ocultar pasos
     document.querySelectorAll(`#form-${type} .form-step`).forEach((el, idx) => {
@@ -128,9 +184,9 @@ function updateProgress(type) {
     const btnNext = document.getElementById(`btn-${type}-next`);
     const btnSave = document.getElementById(`btn-${type}-save`);
 
-    btnPrev.classList.toggle('hidden', current === 1);
-    btnNext.classList.toggle('hidden', current === total);
-    btnSave.classList.toggle('hidden', current !== total);
+    if (btnPrev) btnPrev.classList.toggle('hidden', current === 1);
+    if (btnNext) btnNext.classList.toggle('hidden', current === total);
+    if (btnSave) btnSave.classList.toggle('hidden', current !== total);
 }
 
 // --- UTILIDADES ---
@@ -146,8 +202,10 @@ function showToast(message) {
 }
 
 function updateDashStats() {
-    document.getElementById('stat-students').textContent = estudiantes.length;
-    document.getElementById('stat-piars').textContent = piars.length;
+    const stdStat = document.getElementById('stat-students');
+    const piarStat = document.getElementById('stat-piars');
+    if (stdStat) stdStat.textContent = estudiantes.length;
+    if (piarStat) piarStat.textContent = piars.length;
 }
 
 function generateUUID() {
@@ -218,14 +276,14 @@ function loadStudentsSelect() {
 function handleStudentSelect(studentId) {
     const helper = document.getElementById('diag-helper');
     if(!studentId) {
-        helper.textContent = "Selecciona para ver sugerencias";
+        if (helper) helper.textContent = "Selecciona para ver sugerencias";
         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
         return;
     }
     
     const student = estudiantes.find(s => s.id === studentId);
     if(student && student.diagnostico && student.diagnostico.length > 0) {
-        helper.textContent = `💡 Sugerencia: ${student.diagnostico.join(', ')}`;
+        if (helper) helper.textContent = `💡 Sugerencia: ${student.diagnostico.join(', ')}`;
         document.querySelectorAll('input[name="barreras"]').forEach(cb => cb.checked = false);
         
         const diags = student.diagnostico;
@@ -240,17 +298,19 @@ function handleStudentSelect(studentId) {
             if(cb) cb.checked = true;
         });
     } else {
-         helper.textContent = "Estudiante sin diagnóstico previo.";
+         if (helper) helper.textContent = "Estudiante sin diagnóstico previo.";
     }
 }
 
 function toggleFlex(isYes) {
     const flexContainer = document.getElementById('flex-options-container');
-    if(isYes) {
-        flexContainer.classList.remove('hidden');
-    } else {
-        flexContainer.classList.add('hidden');
-        document.querySelectorAll('input[name="tipo_flex"]').forEach(cb => cb.checked = false);
+    if (flexContainer) {
+        if(isYes) {
+            flexContainer.classList.remove('hidden');
+        } else {
+            flexContainer.classList.add('hidden');
+            document.querySelectorAll('input[name="tipo_flex"]').forEach(cb => cb.checked = false);
+        }
     }
 }
 
@@ -299,7 +359,7 @@ async function savePIAR(e) {
             piars.push(savedPiar);
             showToast('✅ Formulario PIAR guardado');
             e.target.reset();
-            navigate('list-piar');
+            handleAuthNavigation('list-piar');
         } else {
             const errData = await res.json();
             alert("Error: " + (errData.error || "Error al guardar"));

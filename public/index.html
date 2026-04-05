@@ -58,8 +58,28 @@
             <p id="system-status" class="text-xs opacity-80 mt-1">Sincronizado con Supabase</p>
         </header>
 
+        <!-- TOOLBAR SUPERIOR (GLASS) -->
+        <nav id="top-bar" class="sticky top-[84px] w-full glass border-b border-gray-100 flex justify-around p-3 z-40">
+            <button class="nav-btn active flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="navigate('home')">
+                <span class="text-xl">🏠</span>
+                <span class="text-[0.65rem] font-bold uppercase">Inicio</span>
+            </button>
+            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="navigate('new-piar')">
+                <span class="text-xl">✨</span>
+                <span class="text-[0.65rem] font-bold uppercase">Plan</span>
+            </button>
+            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="handleAuthNavigation('list-piar')">
+                <span class="text-xl">📄</span>
+                <span class="text-[0.65rem] font-bold uppercase">Ver</span>
+            </button>
+            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="handleAuthNavigation('export')">
+                <span class="text-xl">⬇️</span>
+                <span class="text-[0.65rem] font-bold uppercase">Excel</span>
+            </button>
+        </nav>
+
         <!-- MAIN CONTENT -->
-        <main id="main-content" class="flex-grow p-5 pb-24 overflow-y-auto">
+        <main id="main-content" class="flex-grow p-5 pb-10 overflow-y-auto">
             
             <!-- VISTA INICIO -->
             <section id="view-home" class="view active space-y-6">
@@ -425,28 +445,22 @@
                     <!-- Los PIAR se inyectan acá -->
                 </div>
             </section>
+            <!-- VISTA LOGIN -->
+            <section id="view-login" class="view space-y-6">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <div class="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Acceso Restringido</h2>
+                    <p class="text-gray-500 text-sm mb-6">Esta sección contiene información sensible. Por favor ingresa tu contraseña.</p>
+                    
+                    <div class="space-y-4">
+                        <input type="password" id="login-password" placeholder="Contraseña" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:border-primary focus:bg-white outline-none transition-all text-center text-lg tracking-widest">
+                        <button onclick="verifyLogin()" class="w-full p-4 bg-primary text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all">Desbloquear</button>
+                    </div>
+                </div>
+            </section>
 
         </main>
         
-        <!-- TOOLBAR INFERIOR (GLASS) -->
-        <nav id="bottom-bar" class="fixed bottom-0 w-full max-w-md glass border-t border-gray-100 flex justify-around p-3 z-50">
-            <button class="nav-btn active flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="navigate('home')">
-                <span class="text-xl">🏠</span>
-                <span class="text-[0.65rem] font-bold uppercase">Inicio</span>
-            </button>
-            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="navigate('new-piar')">
-                <span class="text-xl">✨</span>
-                <span class="text-[0.65rem] font-bold uppercase">Plan</span>
-            </button>
-            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="navigate('list-piar')">
-                <span class="text-xl">📄</span>
-                <span class="text-[0.65rem] font-bold uppercase">Ver</span>
-            </button>
-            <button class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all text-gray-400" onclick="exportExcel()">
-                <span class="text-xl">⬇️</span>
-                <span class="text-[0.65rem] font-bold uppercase">Excel</span>
-            </button>
-        </nav>
 
         <!-- Toast -->
         <div id="toast-alert" class="fixed top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 transition-opacity pointer-events-none z-[100]"></div>

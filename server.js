@@ -20,6 +20,15 @@ const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co
 const supabaseKey = process.env.SUPABASE_ANON_KEY || 'placeholder_key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 // API Routes
+app.post('/api/verify', (req, res) => {
+    const { password } = req.body;
+    const correctPassword = process.env.ACCESS_PASSWORD || 'katherine2026@';
+    if (password === correctPassword) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+});
 
 // Obtener todos los estudiantes
 app.get('/api/estudiantes', async (req, res) => {
