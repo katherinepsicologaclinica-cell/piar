@@ -160,6 +160,25 @@ function validateStep(type, step) {
         }
     });
 
+    // Validación especial para grupos de checkboxes obligatorios (ej: Apoyo Requerido)
+    // Buscamos contenedores que tengan un label con "*"
+    const checkGroups = container.querySelectorAll('.grid'); // Suponiendo que los grupos están en divs .grid
+    checkGroups.forEach(group => {
+        const label = group.parentElement.querySelector('label');
+        if (label && label.textContent.includes('*')) {
+            const checks = group.querySelectorAll('input[type="checkbox"]');
+            if (checks.length > 0) {
+                const oneChecked = Array.from(checks).some(c => c.checked);
+                if (!oneChecked) {
+                    group.classList.add('ring-2', 'ring-red-300', 'rounded-xl', 'p-2');
+                    valid = false;
+                } else {
+                    group.classList.remove('ring-2', 'ring-red-300', 'p-2');
+                }
+            }
+        }
+    });
+
     if (!valid) showToast("⚠️ Completa los campos obligatorios");
     return valid;
 }
@@ -224,6 +243,14 @@ async function saveStudent(e) {
     const grado = document.getElementById('std-grado').value;
     const edad = document.getElementById('std-edad').value;
     const diagnosticos = Array.from(document.querySelectorAll('input[name="diagnostico"]:checked')).map(cb => cb.value);
+    
+    // Capturar "Otro" diagnóstico
+    const checkOtro = document.getElementById('check-std-diag-otro');
+    const txtOtro = document.getElementById('std-diag-otro');
+    if (checkOtro && checkOtro.checked && txtOtro && txtOtro.value.trim()) {
+        diagnosticos.push(`Otro: ${txtOtro.value.trim()}`);
+    }
+
     const detalle = document.getElementById('std-detalle-diag').value;
     
     const newStudent = {
@@ -551,7 +578,7 @@ function exportExcel() {
     piars.forEach(p => {
         const std = estudiantes.find(s => s.id === p.estudiante_id) || {};
         const escapeCsv = (str) => `"${(str || '').toString().replace(/"/g, '""')}"`;
-        const joinAndEscape = (arr) => escapeCsv((arr || []).join(', '));
+        const joinAndEscape = (arr) => escapeCsv((arr || []).join('\n'));
 
         const row = [
             escapeCsv(std.nombre), escapeCsv(std.grado), joinAndEscape(std.diagnostico),
