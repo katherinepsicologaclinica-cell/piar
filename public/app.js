@@ -304,6 +304,15 @@ function handleStudentSelect(studentId) {
     }
 }
 
+function toggleOtroBarrera(show) {
+    const txt = document.getElementById('piar-barrera-otro');
+    if (txt) {
+        txt.classList.toggle('hidden', !show);
+        if (show) setTimeout(() => txt.focus(), 100);
+    }
+    updateBarriersCounter();
+}
+
 // --- NUEVAS FUNCIONES PARA BARRERAS DINÁMICAS ---
 function renderBarriers() {
     const container = document.getElementById('barreras-container');
@@ -353,7 +362,10 @@ function renderBarriers() {
 }
 
 function updateBarriersCounter() {
-    const count = document.querySelectorAll('input[name="barreras"]:checked').length;
+    const listCount = document.querySelectorAll('input[name="barreras"]:checked').length;
+    const otroCheck = document.getElementById('check-barrera-otro');
+    const count = listCount + (otroCheck && otroCheck.checked ? 1 : 0);
+    
     const counter = document.getElementById('barreras-counter');
     if (counter) {
         counter.textContent = `${count} seleccionadas`;
@@ -389,14 +401,21 @@ async function savePIAR(e) {
     const frecRadio = document.querySelector('input[name="frecuencia"]:checked');
     const frecuencia = frecRadio ? frecRadio.value : '';
 
-    const getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+    const barreras = getCheckedValues('barreras');
+    
+    // Manejar opción "Otro"
+    const otroCheck = document.getElementById('check-barrera-otro');
+    const otroText = document.getElementById('piar-barrera-otro');
+    if (otroCheck && otroCheck.checked && otroText.value.trim()) {
+        barreras.push(`Otro: ${otroText.value.trim()}`);
+    }
 
     const newPIAR = {
         id: generateUUID(),
         estudiante_id,
         docente,
         asignatura,
-        barreras: getCheckedValues('barreras'),
+        barreras: barreras,
         ajuste_razonable,
         flexibilizacion,
         tipo_flexibilizacion: getCheckedValues('tipo_flex'),
@@ -421,6 +440,11 @@ async function savePIAR(e) {
             piars.push(savedPiar);
             showToast('✅ Formulario PIAR guardado');
             e.target.reset();
+            if (otroCheck) otroCheck.checked = false;
+            if (otroText) {
+                otroText.value = '';
+                otroText.classList.add('hidden');
+            }
             updateBarriersCounter(); // Resetear contador
             handleAuthNavigation('list-piar');
         } else {
