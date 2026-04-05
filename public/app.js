@@ -313,6 +313,31 @@ function toggleOtroBarrera(show) {
     updateBarriersCounter();
 }
 
+function handleAsignaturaChange(val) {
+    const txt = document.getElementById('piar-asignatura-otra');
+    if (txt) {
+        txt.classList.toggle('hidden', val !== 'Otra');
+        if (val === 'Otra') setTimeout(() => txt.focus(), 100);
+    }
+}
+
+function toggleField(checkId, txtId) {
+    const check = document.getElementById(checkId);
+    const txt = document.getElementById(txtId);
+    if (check && txt) {
+        txt.classList.toggle('hidden', !check.checked);
+        if (check.checked) setTimeout(() => txt.focus(), 100);
+    }
+}
+
+function toggleFrecuenciaOtra(show) {
+    const txt = document.getElementById('piar-frecuencia-otra');
+    if (txt) {
+        txt.classList.toggle('hidden', !show);
+        if (show) setTimeout(() => txt.focus(), 100);
+    }
+}
+
 // --- NUEVAS FUNCIONES PARA BARRERAS DINÁMICAS ---
 function renderBarriers() {
     const container = document.getElementById('barreras-container');
@@ -393,36 +418,56 @@ async function savePIAR(e) {
     
     const docente = document.getElementById('piar-docente').value;
     const estudiante_id = document.getElementById('piar-estudiante').value;
-    const asignatura = document.getElementById('piar-asignatura').value;
+    const asignaturaSelect = document.getElementById('piar-asignatura');
+    let asignatura = asignaturaSelect ? asignaturaSelect.value : '';
+    if (asignatura === 'Otra') {
+        const asigOtra = document.getElementById('piar-asignatura-otra');
+        if (asigOtra && asigOtra.value.trim()) asignatura = `Otra: ${asigOtra.value.trim()}`;
+    }
+
     const ajuste_razonable = document.getElementById('piar-ajuste').value;
     const meta = document.getElementById('piar-meta').value;
     const flexRadio = document.querySelector('input[name="flexibilizacion"]:checked');
     const flexibilizacion = flexRadio ? flexRadio.value === 'si' : false;
-    const frecRadio = document.querySelector('input[name="frecuencia"]:checked');
-    const frecuencia = frecRadio ? frecRadio.value : '';
-
-    const barreras = getCheckedValues('barreras');
     
-    // Manejar opción "Otro"
-    const otroCheck = document.getElementById('check-barrera-otro');
-    const otroText = document.getElementById('piar-barrera-otro');
-    if (otroCheck && otroCheck.checked && otroText.value.trim()) {
-        barreras.push(`Otro: ${otroText.value.trim()}`);
+    const frecRadio = document.querySelector('input[name="frecuencia"]:checked');
+    let frecuencia = frecRadio ? frecRadio.value : '';
+    if (frecuencia === 'Otra') {
+        const frecOtra = document.getElementById('piar-frecuencia-otra');
+        if (frecOtra && frecOtra.value.trim()) frecuencia = `Otra: ${frecOtra.value.trim()}`;
     }
+
+    const getCheckedValues = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
+    
+    const collectWithOther = (name, checkId, txtId) => {
+        const vals = getCheckedValues(name);
+        const check = document.getElementById(checkId);
+        const txt = document.getElementById(txtId);
+        if (check && check.checked && txt && txt.value.trim()) {
+            vals.push(`Otro: ${txt.value.trim()}`);
+        }
+        return vals;
+    };
+
+    const barreras = collectWithOther('barreras', 'check-barrera-otro', 'piar-barrera-otro');
+    const tipo_flexibilizacion = collectWithOther('tipo_flex', 'check-flex-otro', 'piar-flex-otro');
+    const apoyo = collectWithOther('apoyo', 'check-apoyo-otro', 'piar-apoyo-otro');
+    const evaluacion = collectWithOther('evaluacion', 'check-eval-otro', 'piar-eval-otro');
+    const seguimiento = collectWithOther('seguimiento', 'check-seguimiento-otro', 'piar-seguimiento-otro');
 
     const newPIAR = {
         id: generateUUID(),
         estudiante_id,
         docente,
         asignatura,
-        barreras: barreras,
+        barreras,
         ajuste_razonable,
         flexibilizacion,
-        tipo_flexibilizacion: getCheckedValues('tipo_flex'),
-        evaluacion: getCheckedValues('evaluacion'),
-        apoyo: getCheckedValues('apoyo'),
+        tipo_flexibilizacion,
+        evaluacion,
+        apoyo,
         meta,
-        seguimiento: getCheckedValues('seguimiento'),
+        seguimiento,
         frecuencia,
         created_at: new Date().toISOString()
     };
@@ -440,11 +485,13 @@ async function savePIAR(e) {
             piars.push(savedPiar);
             showToast('✅ Formulario PIAR guardado');
             e.target.reset();
-            if (otroCheck) otroCheck.checked = false;
-            if (otroText) {
-                otroText.value = '';
-                otroText.classList.add('hidden');
-            }
+            // Limpiar campos "Otro" y ocultarlos
+            document.querySelectorAll('textarea[id$="-otro"], textarea[id$="-otra"]').forEach(txt => {
+                txt.value = '';
+                txt.classList.add('hidden');
+            });
+            document.querySelectorAll('input[id^="check-"]').forEach(cb => cb.checked = false);
+            
             updateBarriersCounter(); // Resetear contador
             handleAuthNavigation('list-piar');
         } else {

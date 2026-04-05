@@ -270,7 +270,7 @@
 
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Asignatura *</label>
-                            <select id="piar-asignatura" required class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:border-secondary focus:bg-white outline-none transition-all cursor-pointer">
+                            <select id="piar-asignatura" required onchange="handleAsignaturaChange(this.value)" class="w-full p-4 bg-gray-50 border border-transparent rounded-xl focus:border-secondary focus:bg-white outline-none transition-all cursor-pointer">
                                 <option value="">Seleccione...</option>
                                 <option value="Lengua Castellana">Lengua Castellana</option>
                                 <option value="Matemáticas">Matemáticas</option>
@@ -280,6 +280,7 @@
                                 <option value="Educación Física">Educación Física</option>
                                 <option value="Otra">Otra</option>
                             </select>
+                            <textarea id="piar-asignatura-otra" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs" rows="2" placeholder="Especificar asignatura..."></textarea>
                         </div>
                     </div>
 
@@ -339,6 +340,11 @@
                                     <input type="checkbox" name="tipo_flex" value="Entregas extendidas" class="w-5 h-5 rounded border-gray-300 text-secondary focus:ring-secondary">
                                     <span class="text-sm">Entregas extendidas</span>
                                 </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="check-flex-otro" onchange="toggleField('check-flex-otro', 'piar-flex-otro')" class="w-5 h-5 rounded border-gray-300 text-secondary focus:ring-secondary">
+                                    <span class="text-sm">Otra</span>
+                                </label>
+                                <textarea id="piar-flex-otro" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs" rows="2" placeholder="Especifique..."></textarea>
                             </div>
                         </div>
 
@@ -357,6 +363,11 @@
                                     <input type="checkbox" name="apoyo" value="Familiar" class="peer absolute opacity-0">
                                     <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 font-medium text-xs text-center transition-all">Familiar</div>
                                 </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="checkbox" id="check-apoyo-otro" onchange="toggleField('check-apoyo-otro', 'piar-apoyo-otro')" class="peer absolute opacity-0">
+                                    <div class="p-2 border border-gray-100 rounded-lg peer-checked:bg-pink-50 font-medium text-xs text-center transition-all">Otro</div>
+                                </label>
+                                <textarea id="piar-apoyo-otro" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs col-span-2" rows="2" placeholder="Especifique apoyo..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -382,6 +393,11 @@
                                     <input type="checkbox" name="evaluacion" value="Rúbrica" class="peer absolute opacity-0">
                                     <div class="p-3 border border-pink-50 rounded-xl peer-checked:bg-pink-500 peer-checked:text-white transition-all text-center text-sm font-bold">Rúbrica</div>
                                 </label>
+                                <label class="cursor-pointer relative">
+                                    <input type="checkbox" id="check-eval-otro" onchange="toggleField('check-eval-otro', 'piar-eval-otro')" class="peer absolute opacity-0">
+                                    <div class="p-3 border border-pink-50 rounded-xl peer-checked:bg-pink-500 peer-checked:text-white transition-all text-center text-sm font-bold">Otro</div>
+                                </label>
+                                <textarea id="piar-eval-otro" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs col-span-2" rows="2" placeholder="Especifique evaluación..."></textarea>
                             </div>
                         </div>
 
@@ -404,6 +420,11 @@
                                     <input type="checkbox" name="seguimiento" value="Registro Semanal" class="w-5 h-5 text-secondary rounded">
                                     <span class="text-sm">Registro Semanal</span>
                                 </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="check-seguimiento-otro" onchange="toggleField('check-seguimiento-otro', 'piar-seguimiento-otro')" class="w-5 h-5 text-secondary rounded">
+                                    <span class="text-sm">Otro</span>
+                                </label>
+                                <textarea id="piar-seguimiento-otro" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs" rows="2" placeholder="Especifique seguimiento..."></textarea>
                             </div>
                         </div>
 
@@ -411,15 +432,19 @@
                             <label class="block text-sm font-bold text-gray-700 mb-4">Frecuencia</label>
                             <div class="grid grid-cols-2 gap-3">
                                 <label class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                                    <input type="radio" name="frecuencia" value="Semanal"> <span class="text-xs font-medium">Semanal</span>
+                                    <input type="radio" name="frecuencia" value="Semanal" onchange="toggleFrecuenciaOtra(false)"> <span class="text-xs font-medium">Semanal</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                                    <input type="radio" name="frecuencia" value="Quincenal"> <span class="text-xs font-medium">Quincenal</span>
+                                    <input type="radio" name="frecuencia" value="Quincenal" onchange="toggleFrecuenciaOtra(false)"> <span class="text-xs font-medium">Quincenal</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                                    <input type="radio" name="frecuencia" value="Mensual"> <span class="text-xs font-medium">Mensual</span>
+                                    <input type="radio" name="frecuencia" value="Mensual" onchange="toggleFrecuenciaOtra(false)"> <span class="text-xs font-medium">Mensual</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                    <input type="radio" name="frecuencia" value="Otra" onchange="toggleFrecuenciaOtra(true)"> <span class="text-xs font-medium">Otra</span>
                                 </label>
                             </div>
+                            <textarea id="piar-frecuencia-otra" class="hidden w-full mt-2 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-secondary transition-all text-xs" rows="2" placeholder="Especificar frecuencia..."></textarea>
                         </div>
                     </div>
 
