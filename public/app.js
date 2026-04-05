@@ -572,7 +572,7 @@ function exportExcel() {
     }
 
     const headers = [
-        "Estudiante", "Documento", "Grado", "Edad", "Diagnóstico", "Docente", "Asignatura", 
+        "Estudiante", "Tipo Doc.", "Num. Doc", "Grado", "Edad", "Diagnóstico", "Docente", "Asignatura", 
         "Barreras", "Ajuste Metodológico", "Flexibilidad de Tiempo", 
         "Evaluación", "Apoyo", "Meta", "Seguimiento y Frecuencia", "Fecha"
     ];
@@ -594,7 +594,8 @@ function exportExcel() {
 
         const row = [
             escapeCsv(std.nombre), 
-            escapeCsv(`${std.tipo_doc || ''} ${std.num_doc || ''}`),
+            escapeCsv(std.tipo_doc || ''),
+            escapeCsv(std.num_doc || ''),
             escapeCsv(std.grado), 
             escapeCsv(std.edad), 
             joinAndEscape(std.diagnostico),
