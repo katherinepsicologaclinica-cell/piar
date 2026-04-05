@@ -240,6 +240,8 @@ async function saveStudent(e) {
     e.preventDefault();
     
     const nombre = document.getElementById('std-nombre').value;
+    const tipo_doc = document.getElementById('std-tipo-doc').value;
+    const num_doc = document.getElementById('std-num-doc').value;
     const grado = document.getElementById('std-grado').value;
     const edad = document.getElementById('std-edad').value;
     const diagnosticos = Array.from(document.querySelectorAll('input[name="diagnostico"]:checked')).map(cb => cb.value);
@@ -256,6 +258,8 @@ async function saveStudent(e) {
     const newStudent = {
         id: generateUUID(),
         nombre,
+        tipo_doc,
+        num_doc,
         grado,
         edad: edad || null,
         diagnostico: diagnosticos,
@@ -568,9 +572,9 @@ function exportExcel() {
     }
 
     const headers = [
-        "Estudiante", "Grado", "Diagnóstico", "Docente", "Asignatura", 
-        "Barreras", "Ajuste Metodológico", "Flex. Tiempo", "Tipo Flex", 
-        "Evaluación", "Apoyo", "Meta", "Seguimiento", "Frecuencia", "Fecha"
+        "Estudiante", "Documento", "Grado", "Edad", "Diagnóstico", "Docente", "Asignatura", 
+        "Barreras", "Ajuste Metodológico", "Flexibilidad de Tiempo", 
+        "Evaluación", "Apoyo", "Meta", "Seguimiento y Frecuencia", "Fecha"
     ];
 
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(";") + "\r\n";
@@ -580,13 +584,29 @@ function exportExcel() {
         const escapeCsv = (str) => `"${(str || '').toString().replace(/"/g, '""')}"`;
         const joinAndEscape = (arr) => escapeCsv((arr || []).join('\n'));
 
+        // Consolidación de Flexibilidad
+        const flexInfo = (p.flexibilizacion ? 'SÍ' : 'NO') + 
+                        (p.tipo_flexibilizacion && p.tipo_flexibilizacion.length > 0 ? '\n' + p.tipo_flexibilizacion.join('\n') : '');
+        
+        // Consolidación de Seguimiento y Frecuencia
+        const seguimientoInfo = (p.seguimiento && p.seguimiento.length > 0 ? p.seguimiento.join('\n') : '') + 
+                                '\nFRECUENCIA: ' + (p.frecuencia || 'No especificada');
+
         const row = [
-            escapeCsv(std.nombre), escapeCsv(std.grado), joinAndEscape(std.diagnostico),
-            escapeCsv(p.docente), escapeCsv(p.asignatura), joinAndEscape(p.barreras),
-            escapeCsv(p.ajuste_razonable), escapeCsv(p.flexibilizacion ? 'Sí' : 'No'),
-            joinAndEscape(p.tipo_flexibilizacion), joinAndEscape(p.evaluacion),
-            joinAndEscape(p.apoyo), escapeCsv(p.meta),
-            joinAndEscape(p.seguimiento), escapeCsv(p.frecuencia),
+            escapeCsv(std.nombre), 
+            escapeCsv(`${std.tipo_doc || ''} ${std.num_doc || ''}`),
+            escapeCsv(std.grado), 
+            escapeCsv(std.edad), 
+            joinAndEscape(std.diagnostico),
+            escapeCsv(p.docente), 
+            escapeCsv(p.asignatura), 
+            joinAndEscape(p.barreras),
+            escapeCsv(p.ajuste_razonable), 
+            escapeCsv(flexInfo),
+            joinAndEscape(p.evaluacion),
+            joinAndEscape(p.apoyo), 
+            escapeCsv(p.meta),
+            escapeCsv(seguimientoInfo),
             escapeCsv(new Date(p.created_at).toLocaleDateString())
         ];
         csvContent += row.join(";") + "\r\n";
